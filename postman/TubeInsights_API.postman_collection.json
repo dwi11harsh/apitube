@@ -1,0 +1,330 @@
+{
+  "info": {
+    "name": "TubeInsights API",
+    "description": "Complete test collection for TubeInsights API backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "test_user_id",
+      "value": "test_user_001"
+    },
+    {
+      "key": "test_video_id",
+      "value": "VMj-3S1tku0"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check - Service Up",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has status ok', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.be.oneOf(['ok', 'degraded']);",
+                  "});",
+                  "",
+                  "pm.test('Response has services object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.services).to.be.an('object');",
+                  "    pm.expect(jsonData.services).to.have.property('supabase');",
+                  "    pm.expect(jsonData.services).to.have.property('pinecone');",
+                  "});",
+                  "",
+                  "pm.test('Response has timestamp', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.timestamp).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Videos",
+      "item": [
+        {
+          "name": "List Videos - Valid User",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/videos?user_id={{test_user_id}}&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["videos"],
+              "query": [
+                { "key": "user_id", "value": "{{test_user_id}}" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has videos array', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.videos).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Response has pagination fields', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.total).to.be.a('number');",
+                  "    pm.expect(jsonData.page).to.be.a('number');",
+                  "    pm.expect(jsonData.pages).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Videos - Missing User ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/videos"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 422 (validation error)', function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Videos - Invalid Page Number",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/videos?user_id={{test_user_id}}&page=0",
+              "host": ["{{base_url}}"],
+              "path": ["videos"],
+              "query": [
+                { "key": "user_id", "value": "{{test_user_id}}" },
+                { "key": "page", "value": "0" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 422 (validation error)', function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Videos - Excessive Limit",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/videos?user_id={{test_user_id}}&limit=1000",
+              "host": ["{{base_url}}"],
+              "path": ["videos"],
+              "query": [
+                { "key": "user_id", "value": "{{test_user_id}}" },
+                { "key": "limit", "value": "1000" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 422 (limit too high)', function () {",
+                  "    pm.response.to.have.status(422);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Video - Non-existent",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/videos/nonexistent_video_id_12345"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Response has error detail', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail).to.equal('Video not found');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Video - Valid (if exists)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/videos/{{test_video_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Response has deleted status', function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.status).to.equal('deleted');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Hard Work - WebSocket Tests (Manual)",
+      "item": [
+        {
+          "name": "Hard Work - Valid Video URL (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/hard-work",
+            "description": "WebSocket endpoint. Connect using WebSocket client and send:\n\n```json\n{\n  \"url\": \"https://www.youtube.com/watch?v=VMj-3S1tku0\",\n  \"user_id\": \"test_user_001\"\n}\n```\n\nExpected: Progress messages followed by completion"
+          }
+        },
+        {
+          "name": "Hard Work - Valid Playlist URL (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/hard-work",
+            "description": "WebSocket endpoint. Connect and send:\n\n```json\n{\n  \"url\": \"https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ\",\n  \"user_id\": \"test_user_001\",\n  \"limit\": 3\n}\n```\n\nExpected: Multiple video progress messages"
+          }
+        },
+        {
+          "name": "Hard Work - Valid Channel URL (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/hard-work",
+            "description": "WebSocket endpoint. Connect and send:\n\n```json\n{\n  \"url\": \"https://www.youtube.com/@AndrejKarpathy\",\n  \"user_id\": \"test_user_001\",\n  \"limit\": 2\n}\n```\n\nExpected: Channel video extraction progress"
+          }
+        },
+        {
+          "name": "Hard Work - Invalid YouTube URL (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/hard-work",
+            "description": "WebSocket endpoint. Connect and send:\n\n```json\n{\n  \"url\": \"https://example.com/not-youtube\",\n  \"user_id\": \"test_user_001\"\n}\n```\n\nExpected: Error - Invalid URL"
+          }
+        },
+        {
+          "name": "Hard Work - Empty URL (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/hard-work",
+            "description": "WebSocket endpoint. Connect and send:\n\n```json\n{\n  \"url\": \"\",\n  \"user_id\": \"test_user_001\"\n}\n```\n\nExpected: Error - Invalid URL"
+          }
+        },
+        {
+          "name": "Hard Work - Private Video (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/hard-work",
+            "description": "WebSocket endpoint. Connect and send a private/deleted video URL:\n\n```json\n{\n  \"url\": \"https://www.youtube.com/watch?v=PRIVATE_VIDEO\",\n  \"user_id\": \"test_user_001\"\n}\n```\n\nExpected: Error fetching transcript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat - WebSocket Tests (Manual)",
+      "item": [
+        {
+          "name": "Chat - New Session (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/chat",
+            "description": "WebSocket endpoint. Connect and send:\n\n```json\n{\n  \"user_id\": \"test_user_001\",\n  \"question\": \"What is this video about?\",\n  \"video_ids\": [\"VMj-3S1tku0\"]\n}\n```\n\nExpected: Session ID, answer, sources, complete"
+          }
+        },
+        {
+          "name": "Chat - Existing Session (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/chat",
+            "description": "WebSocket endpoint. Connect and send (use chat_id from previous):\n\n```json\n{\n  \"user_id\": \"test_user_001\",\n  \"chat_id\": \"<chat_id_from_previous>\",\n  \"question\": \"Tell me more about that\",\n  \"video_ids\": [\"VMj-3S1tku0\"]\n}\n```\n\nExpected: Same session ID, continued conversation"
+          }
+        },
+        {
+          "name": "Chat - Invalid Chat ID (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/chat",
+            "description": "WebSocket endpoint. Connect and send:\n\n```json\n{\n  \"user_id\": \"test_user_001\",\n  \"chat_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"question\": \"Test\",\n  \"video_ids\": [\"VMj-3S1tku0\"]\n}\n```\n\nExpected: Error - Chat session not found"
+          }
+        },
+        {
+          "name": "Chat - Empty Question (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/chat",
+            "description": "WebSocket endpoint. Connect and send:\n\n```json\n{\n  \"user_id\": \"test_user_001\",\n  \"question\": \"\",\n  \"video_ids\": [\"VMj-3S1tku0\"]\n}\n```\n\nExpected: Validation error or empty response"
+          }
+        },
+        {
+          "name": "Chat - No Video IDs (WebSocket)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/chat",
+            "description": "WebSocket endpoint. Connect and send:\n\n```json\n{\n  \"user_id\": \"test_user_001\",\n  \"question\": \"What is machine learning?\",\n  \"video_ids\": []\n}\n```\n\nExpected: Response based on general context (may be empty)"
+          }
+        }
+      ]
+    }
+  ]
+}
